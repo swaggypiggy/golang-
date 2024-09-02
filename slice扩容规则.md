@@ -2,18 +2,17 @@
 # https://jodezer.github.io/2017/05/golangSlice%E7%9A%84%E6%89%A9%E5%AE%B9%E8%A7%84%E5%88%99
 
   以前一直以为go语言中的slice，也就是切片，其容量增长规则与std::vector一样，指数扩容，每次扩容都增长一倍，没有去详细了解过源代码。直到同事丢给了我以下这段代码：
-\```golang
+```golang
 s := []int{1,2}
 s = append(s,4,5,6)
 fmt.Printf("%d %d",len(s),cap(s))
-\```
+```
 
    如果简单地按照指数扩容，那么结果应该是 5，8。从初始化时的 2,2 扩容到 4,4 ，然后增长到 5, 8。但结果并不是这样，而是输出了 5,6。深入测试这段代码，每次往s中append两个元素，往后cap(s)都是6的倍数增长。<br>
    源代码位于runtime/slice.go中，关于slice增长的函数是growslice，其中的代码，决定了slice的扩容规则
 
 # 基本cap的增长规则
-
-\```golang
+```golang
 newcap := old.cap
 	if newcap+newcap < cap {
 		newcap = cap
@@ -29,7 +28,7 @@ newcap := old.cap
 			}
 		}
 	}
-\```
+```
 
   此处的cap是旧容量加上新加入元素大小的结果，也就是此处slice扩容的理论上的最小值，old就是旧的slice。<br>
 可以看到cap增长基本规则是，若新入元素大小通过倍数增长能够hold住，那就根据旧容量是否超过1024决定是倍数增长还是1.25倍逐步增长；若新入元素大小超过了原有的容量，则新容量取两者相加计算出来的最小cap值。<br>
